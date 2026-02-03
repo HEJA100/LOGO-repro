@@ -646,7 +646,7 @@ if __name__ == '__main__':
         '--CUDA-VISIBLE-DEVICES', type=int, default=0, metavar='INTEGER',
         help='CUDA_VISIBLE_DEVICES')
     _argparser.add_argument(
-        '--num-classes', type=int, default=10, metavar='INTEGER',
+        '--num-classes', type=int, default=51, metavar='INTEGER',
         help='Number of total classes')
     _argparser.add_argument(
         '--max-position-embeddings', type=int, default=512, metavar='INTEGER',

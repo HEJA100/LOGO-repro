@@ -15,9 +15,9 @@ bash docs/lineD_run.sh
 
 ## What It Does
 - Patches `pyfasta` for Python 3 via `scripts/patch_pyfasta.py`
-- Generates minimal background ECDF in `docs/lineD_background/`
-- Generates minimal reference FASTA in `docs/lineD_ref/` (<=1,000,000 bp)
-- Creates a small VCF subset in `docs/lineD_out/lineD_input.vcf`
+- Auto-generates minimal background ECDF in `docs/lineD_background/` (ignored by git)
+- Auto-generates minimal reference FASTA in `docs/lineD_ref/` (<=1,000,000 bp, ignored by git)
+- Creates a small VCF subset in `docs/lineD_out/lineD_input.vcf` (ignored by git)
 - Runs a 1-epoch / 1-step smoke test with fixed parameters
 
 ## Outputs (ignored by git)

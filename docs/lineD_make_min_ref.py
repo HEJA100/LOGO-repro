@@ -1,7 +1,9 @@
 import os
 import pandas as pd
 
-vcf_path = "05_LOGO_Variant_Prioritization/1. script/05_LOGO-C2P/GWAS_C2P/1000G_GWAS_1408.vcf"
+default_vcf = "05_LOGO_Variant_Prioritization/1. script/05_LOGO-C2P/GWAS_C2P/1000G_GWAS_1408.vcf"
+prepared_vcf = "docs/lineD_out/lineD_input.vcf"
+vcf_path = prepared_vcf if os.path.exists(prepared_vcf) else default_vcf
 max_position = 1000000
 out_path = "docs/lineD_ref/male.hg19.fasta"
 

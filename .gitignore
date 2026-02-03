@@ -14,3 +14,12 @@ Genomics/*.2bit
 *.gdx
 *feature.out.*.csv
 *feature.out.*.tsv
+docs/lineD_logs/*.log
+docs/lineD_out/*
+docs/lineD_ref/*.fasta
+docs/lineD_ref/*.fa
+docs/lineD_ref/*.fna
+docs/lineD_ref/*.flat
+docs/lineD_ref/*.gdx
+docs/lineD_background/*.pkl
+docs/lineD_background/*.json

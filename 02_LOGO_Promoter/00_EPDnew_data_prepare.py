@@ -258,7 +258,7 @@ def process_raw_text_with_annotation(sequences,
 
         # Sequence annotation information
         anno_len = len(anno)
-        anno_position = np.zeros((len(gene_type_dict.keys()) + 2, seq_size), dtype=np.int)
+        anno_position = np.zeros((len(gene_type_dict.keys()) + 2, seq_size), dtype=int)
         if anno_len > 0:
             for jj in range(anno_len):
                 gene_type = anno[jj][0]

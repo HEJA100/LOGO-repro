@@ -166,3 +166,13 @@ Check out the file “05_LOGO_variant_prioritization/README.txt”
 
 - 99_PreTrain_Model_Weight
 
+## Smoke Test (Line D)
+
+Minimal reproducible smoke test for the chromatin/variant pipeline:
+
+```shell
+cd /Users/jason/Desktop/LOGO
+bash docs/lineD_run.sh
+```
+
+Details and notes: `docs/README_smoketest.md`

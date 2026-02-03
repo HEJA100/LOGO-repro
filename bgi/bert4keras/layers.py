@@ -28,7 +28,8 @@ def integerize_shape(func):
     return new_func
 
 
-if keras.__version__[-2:] != 'tf' and keras.__version__ < '2.3':
+kv = getattr(keras, '__version__', '2.3tf')
+if kv[-2:] != 'tf' and kv < '2.3':
 
     class Layer(keras.layers.Layer):
         """重新定义Layer，赋予“层中层”功能

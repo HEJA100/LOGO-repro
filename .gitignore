@@ -1,4 +1,16 @@
-
 02_LOGO_Promoter/data/EPDnew/EPDnew.zip
 03_LOGO_EPI/data/data.zip
 *.zip
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Genomics/*.gz
+Genomics/*.fna
+Genomics/*.fa
+Genomics/*.fasta
+Genomics/*.2bit
+*.flat
+*.gdx
+*feature.out.*.csv
+*feature.out.*.tsv

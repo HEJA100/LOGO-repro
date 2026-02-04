@@ -277,10 +277,15 @@ PY
   echo "FINAL_WEIGHT=$WEIGHT_FILE"
 } | tee -a "$LOG_FILE"
 
-ref_header=$(head -n 1 "$REF" || true)
+ref_header=$(grep -m 1 '^>' "$REF" || true)
 if [[ "$ref_header" != ">chr"* ]]; then
-  echo "WARN: Reference FASTA headers do not start with 'chr'." | tee -a "$LOG_FILE"
-  echo "      Ensure VCF chromosome naming matches reference (chr1 vs 1)." | tee -a "$LOG_FILE"
+  if [[ "$ALLOW_FALLBACK" -eq 0 ]]; then
+    echo "ERROR: Reference FASTA is not UCSC chr naming (expected >chr*)." | tee -a "$LOG_FILE"
+    echo "Your VCF uses chr*; use docs/lineD_assets/ref/hg19.ucsc.fa" | tee -a "$LOG_FILE"
+    exit 1
+  else
+    echo "WARN: Reference FASTA header not UCSC chr naming; proceeding due to --allow-fallback." | tee -a "$LOG_FILE"
+  fi
 fi
 
 vcf_chrom=$(grep -v '^#' "$VCF" | head -n 1 | cut -f1 || true)

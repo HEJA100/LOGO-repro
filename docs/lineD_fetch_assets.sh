@@ -13,12 +13,12 @@ mkdir -p "$REF_DIR" "$WEIGHT_DIR" "$VOCAB_DIR" "$CONFIG_DIR" "$BG_DIR"
 
 echo "Asset directories created under: $ASSETS"
 
-echo "=== Reference (hg19/GRCh37) ==="
-REF_FASTA="$REF_DIR/hg19.fa"
-REF_GZ="$REF_DIR/GCF_000001405.25_GRCh37.p13_genomic.fna.gz"
+echo "=== Reference (hg19/GRCh37, UCSC chr naming) ==="
+REF_FASTA="$REF_DIR/hg19.ucsc.fa"
+REF_GZ="$REF_DIR/hg19.fa.gz"
 if [[ ! -f "$REF_FASTA" ]]; then
-  echo "Downloading GRCh37/hg19 reference (large)..."
-  curl -L -C - -o "$REF_GZ" "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.25_GRCh37.p13/GCF_000001405.25_GRCh37.p13_genomic.fna.gz"
+  echo "Downloading UCSC hg19 reference (large)..."
+  curl -L -C - -o "$REF_GZ" "https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz"
   gzip -dc "$REF_GZ" > "$REF_FASTA"
   echo "Saved: $REF_FASTA"
 else
@@ -28,6 +28,17 @@ if [[ -f "$REF_FASTA" && ! -s "$REF_FASTA" ]]; then
   echo "ERROR: Reference FASTA is empty: $REF_FASTA"
   exit 1
 fi
+
+echo "Header check (first 3):"
+grep -m 3 '^>' "$REF_FASTA" || true
+bad_hdr=$(grep -m 3 '^>' "$REF_FASTA" | grep -v '^>chr' || true)
+if [[ -n "$bad_hdr" ]]; then
+  echo "ERROR: reference header is not UCSC chr naming. Please use docs/lineD_assets/ref/hg19.ucsc.fa"
+  exit 1
+fi
+
+ln -sf "hg19.ucsc.fa" "$REF_DIR/hg19.fa"
+echo "Linked: $REF_DIR/hg19.fa -> hg19.ucsc.fa"
 
 if command -v samtools >/dev/null 2>&1; then
   if [[ ! -f "$REF_FASTA.fai" ]]; then

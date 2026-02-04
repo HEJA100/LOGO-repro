@@ -12,7 +12,7 @@ This is the full inference wrapper for the chromatin/variant pipeline using **re
    bash docs/lineD_full_run.sh --vcf /path/to/your.vcf
    ```
 
-By default the full-run wrapper is **strict**: it exits if any official asset (ref/bg/weights/vocab/config) is missing.  
+By default the full-run wrapper is **strict**: it exits if any official asset (ref/bg/weights/vocab/config) is missing, and it requires UCSC `chr*` reference headers.  
 For sanity-only runs with repo/smoke assets, add `--allow-fallback`.
 
 ## Default Asset Locations (ignored by git)

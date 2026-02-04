@@ -1,5 +1,5 @@
 Python 3.8.20
-pip 24.2 from /opt/anaconda3/envs/logo-lite/lib/python3.8/site-packages/pip (python 3.8)
+pip 24.2 (python 3.8)
 biopython==1.83
 h5py==3.11.0
 joblib==1.4.2

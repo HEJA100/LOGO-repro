@@ -145,6 +145,28 @@ def iter_vcf_lines_from_tar(tar_path):
                     yield line.rstrip("\n"), os.path.basename(m.name)
 
 
+def parse_fsresult_line(line):
+    if not line or line.startswith("#"):
+        return None
+    if "\t" in line:
+        parts = line.split("\t")
+    else:
+        try:
+            parts = next(csv.reader([line]))
+        except Exception:
+            parts = line.split(",")
+    if len(parts) < 5:
+        return None
+    try:
+        pos_val = int(parts[1])
+    except Exception:
+        return None
+    chrom = parts[0]
+    ref = parts[3]
+    alt = parts[4]
+    return chrom, pos_val, ref, alt, parts
+
+
 def chrom_from_filename(name):
     m = re.search(r"(?i)(?:^|[^a-z0-9])(chr)?(1[0-9]|2[0-2]|[1-9]|x|y|m|mt)(?:[^a-z0-9]|$)", name)
     if not m:
@@ -286,22 +308,16 @@ def main():
             pos_set = set(pos_dict.keys())
             for tar_path in tar_list:
                 for line, member_name in iter_vcf_lines_from_tar(tar_path):
-                    if not line or line.startswith("#"):
+                    parsed = parse_fsresult_line(line)
+                    if not parsed:
                         continue
-                    fields = line.split("\t")
-                    if len(fields) < 5:
-                        continue
-                    try:
-                        pos_val = int(fields[1])
-                    except Exception:
-                        continue
+                    chrom_raw, pos_val, ref_val, alt_raw, _parts = parsed
                     if pos_val not in pos_set:
                         continue
-                    chrom_val = normalize_chrom(fields[0])
+                    chrom_val = normalize_chrom(chrom_raw)
                     if chrom_val != chrom:
                         continue
-                    ref_val = fields[3]
-                    alt_vals = fields[4].split(",")
+                    alt_vals = alt_raw.split(",")
                     for v in pos_dict[pos_val]:
                         if ref_val == v["ref"] and v["alt"] in alt_vals:
                             hits_by_index[id(v)].append((line, os.path.basename(tar_path), member_name))

@@ -9,7 +9,8 @@ Minimal, reproducible smoke test for `GeneBert_predict_vcf_slice_e8.py` with aut
 
 ## One-Command Run
 ```bash
-cd /path/to/LOGO-repro
+git clone <repo-url>
+cd <repo-folder>
 bash docs/lineD_run.sh
 ```
 
@@ -19,6 +20,9 @@ bash docs/lineD_run.sh
 - Auto-generates minimal reference FASTA in `docs/lineD_ref/` (<=1,000,000 bp, ignored by git)
 - Creates a small VCF subset in `docs/lineD_out/lineD_input.vcf` (ignored by git)
 - Runs a 1-epoch / 1-step smoke test with fixed parameters
+
+## Classes (51)
+This smoke test uses **51 classes** to match the model output dimension and the background ECDF mapping. The pipeline expects the background JSON to provide one ECDF per class (keys `0..50`). Using 25 would cause shape mismatches in the generator/model/output.
 
 ## Outputs (ignored by git)
 - `docs/lineD_out/lineD_input.vcf_2bs_5gram_51feature.out.*.csv`

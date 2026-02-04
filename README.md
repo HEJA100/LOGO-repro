@@ -171,7 +171,8 @@ Check out the file “05_LOGO_variant_prioritization/README.txt”
 Minimal reproducible smoke test for the chromatin/variant pipeline:
 
 ```shell
-cd /path/to/LOGO-repro
+git clone <repo-url>
+cd <repo-folder>
 bash docs/lineD_run.sh
 ```
 

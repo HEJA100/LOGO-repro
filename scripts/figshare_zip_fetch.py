@@ -96,7 +96,8 @@ def download(url, out_path, headers, min_size, retries, retry_delay):
                 print(f"ERROR: {e}")
                 print("This looks like HTML/403 instead of a ZIP.")
                 print("Alternative: open the Figshare page in a browser, click 'Download all',")
-                print("then place the ZIP at the path you passed to --out and run:")
+                print("then use \"Copy as cURL\" and run:")
+                print("  python scripts/figshare_download_from_curl.py --curl-file /tmp/figshare.curl.txt --out /tmp/logo_figshare_19149827_v2.zip")
                 print("  bash scripts/figshare_unzip_into.sh /tmp/logo_figshare_19149827_v2.zip docs/lineD_figshare")
                 return 2
             time.sleep(retry_delay)

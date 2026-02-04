@@ -28,6 +28,31 @@ python scripts/logo_lookup_figshare.py \
 The output TSV contains original VCF columns plus lookup details:
 - `matched_rows`, `match_note`, `hit_file`, `raw_hit`
 
+## Recommended download flow (Copy as cURL)
+When Cloudflare blocks direct downloads, use the browser's **Copy as cURL** flow:
+
+1) In the browser, click **Download all** on Figshare, then **Copy as cURL**. Save it to `/tmp/figshare.curl.txt`.
+
+2) Download using the cURL file:
+```
+python scripts/figshare_download_from_curl.py \
+  --curl-file /tmp/figshare.curl.txt \
+  --out /tmp/logo_figshare_19149827_v2.zip
+```
+
+3) Unzip into the figshare directory:
+```
+bash scripts/figshare_unzip_into.sh /tmp/logo_figshare_19149827_v2.zip docs/lineD_figshare
+```
+
+4) Run lookup:
+```
+python scripts/logo_lookup_figshare.py \
+  --vcf docs/lineD_out/lineD_input.vcf \
+  --figshare-dir docs/lineD_figshare \
+  --out docs/lineD_out/lineD_input.vcf.logo_figshare.tsv
+```
+
 ## Troubleshooting: downloaded file is not a zip (118 bytes / HTML / 403)
 If you see a tiny file (e.g., 118 bytes) or unzip errors, you likely downloaded an HTML/403 page instead of the ZIP.
 
@@ -54,8 +79,7 @@ python scripts/logo_lookup_figshare.py \
   --out docs/lineD_out/lineD_input.vcf.logo_figshare.tsv
 ```
 
-If you are blocked by Cloudflare/403, use a browser to download from the Figshare page
-("Download all"), then place the ZIP at `/tmp/logo_figshare_19149827_v2.zip` and run the unzip step.
+If you are blocked by Cloudflare/403, use the **Copy as cURL** flow above.
 
 ## Notes
 - The script auto-detects per-chromosome files by name (`chr1`, `chr2`, `chrX`, etc.).

@@ -1,7 +1,7 @@
 ### python
 Python 3.8.20
 ### pip
-pip 25.0.1 (python 3.8)
+pip 25.0.1 (python 3.8, path redacted)
 ### pip freeze
 absl-py==2.3.1
 astunparse==1.6.3

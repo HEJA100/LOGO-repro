@@ -32,6 +32,7 @@ This smoke test uses **51 classes** to match the model output dimension and the 
 Example success markers:
 - `docs/lineD_out/lineD_input.vcf_2bs_5gram_51feature.out.ref.csv`
 - `docs/lineD_out/lineD_input.vcf_2bs_5gram_51feature.out.evalue.csv`
+- `docs/lineD_logs/lineD_run.log`
 
 ## Common Errors
 - **BG/REF missing**: `docs/lineD_run.sh` auto-generates them on first run.

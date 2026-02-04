@@ -209,6 +209,7 @@ def main():
     p.add_argument("--make-index", action="store_true", help="Convert to bgzip+tabix if needed (writes to figshare_dir/indexed)")
     p.add_argument("--cols", default=None, help="Explicit column mapping chrom=1,pos=2,ref=4,alt=5,id=3,score=6-56 or score=*")
     p.add_argument("--keep-multi", action="store_true", help="Keep multiple matches per variant")
+    p.add_argument("--allow-empty", action="store_true", help="Allow empty figshare-dir and emit no_match output")
     args = p.parse_args()
 
     out_path = args.out or (args.vcf + ".logo_figshare.tsv")
@@ -226,8 +227,14 @@ def main():
         positions[v["chrom_norm"]].add(v["pos"])
 
     files = select_files(args.figshare_dir)
-    if not files:
-        print(f"No data files found under {args.figshare_dir}. Proceeding with empty lookups.")
+    if not files and not args.allow_empty:
+        print(f"ERROR: No data files found under {args.figshare_dir}.")
+        print("Hint: fetch and unzip the Figshare ZIP first:")
+        print("  python scripts/figshare_zip_fetch.py --out /tmp/logo_figshare_19149827_v2.zip")
+        print("  bash scripts/figshare_unzip_into.sh /tmp/logo_figshare_19149827_v2.zip docs/lineD_figshare")
+        return 2
+    if not files and args.allow_empty:
+        print(f"No data files found under {args.figshare_dir}. Proceeding with empty lookups (--allow-empty).")
 
     chrom_files = defaultdict(list)
     global_files = []

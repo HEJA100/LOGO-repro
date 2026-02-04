@@ -28,6 +28,35 @@ python scripts/logo_lookup_figshare.py \
 The output TSV contains original VCF columns plus lookup details:
 - `matched_rows`, `match_note`, `hit_file`, `raw_hit`
 
+## Troubleshooting: downloaded file is not a zip (118 bytes / HTML / 403)
+If you see a tiny file (e.g., 118 bytes) or unzip errors, you likely downloaded an HTML/403 page instead of the ZIP.
+
+1) Probe only (no download):
+```
+python scripts/figshare_zip_fetch.py --probe-only
+```
+
+2) Download the ZIP with validation:
+```
+python scripts/figshare_zip_fetch.py --out /tmp/logo_figshare_19149827_v2.zip
+```
+
+3) Unzip into the figshare directory:
+```
+bash scripts/figshare_unzip_into.sh /tmp/logo_figshare_19149827_v2.zip docs/lineD_figshare
+```
+
+4) Run lookup:
+```
+python scripts/logo_lookup_figshare.py \
+  --vcf docs/lineD_out/lineD_input.vcf \
+  --figshare-dir docs/lineD_figshare \
+  --out docs/lineD_out/lineD_input.vcf.logo_figshare.tsv
+```
+
+If you are blocked by Cloudflare/403, use a browser to download from the Figshare page
+("Download all"), then place the ZIP at `/tmp/logo_figshare_19149827_v2.zip` and run the unzip step.
+
 ## Notes
 - The script auto-detects per-chromosome files by name (`chr1`, `chr2`, `chrX`, etc.).
 - It attempts to infer column mapping; if inference fails, pass `--cols`, e.g.

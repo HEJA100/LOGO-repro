@@ -12,6 +12,9 @@ This is the full inference wrapper for the chromatin/variant pipeline using **re
    bash docs/lineD_full_run.sh --vcf /path/to/your.vcf
    ```
 
+By default the full-run wrapper is **strict**: it exits if any official asset (ref/bg/weights/vocab/config) is missing.  
+For sanity-only runs with repo/smoke assets, add `--allow-fallback`.
+
 ## Default Asset Locations (ignored by git)
 - Reference: `docs/lineD_assets/ref/hg19.fa`
 - Weights: `docs/lineD_assets/weights/` (place a single `.h5/.hdf5` here)
@@ -45,10 +48,12 @@ The wrapper **forces**:
 - `--we-size 128`, `--model-dim 256`, `--transformer-depth 2`, `--num-heads 8`, `--ngram 5`
 
 ## Success Markers
-Example outputs:
+Example outputs (official assets):
 - `docs/lineD_out_full/<run-id>/<your.vcf>_32bs_5gram_51feature.out.ref.csv`
 - `docs/lineD_out_full/<run-id>/<your.vcf>_32bs_5gram_51feature.out.evalue.csv`
 - `docs/lineD_logs_full/<run-id>/lineD_full_run.log`
+
+Fallback sanity mode (`--allow-fallback`) will also produce the same file shapes but logs will contain warnings about fallback assets; use it only for pipeline verification.
 
 ## Common Errors
 - **Missing reference**: run `bash docs/lineD_fetch_assets.sh` or supply `--ref`.

@@ -20,6 +20,7 @@ Optional:
   --logdir <dir>               Log base dir (default: docs/lineD_logs_full)
   --cuda <int>                 CUDA device id (default: 0)
   --run-id <string>            Run id (default: timestamp)
+  --allow-fallback             Allow using repo/smoke assets if official assets are missing
 USAGE
 }
 
@@ -42,6 +43,7 @@ OUTDIR="docs/lineD_out_full"
 LOGDIR="docs/lineD_logs_full"
 CUDA="0"
 RUN_ID="$(date +%Y%m%d_%H%M%S)"
+ALLOW_FALLBACK=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -55,6 +57,7 @@ while [[ $# -gt 0 ]]; do
     --logdir) LOGDIR="$2"; shift 2;;
     --cuda) CUDA="$2"; shift 2;;
     --run-id) RUN_ID="$2"; shift 2;;
+    --allow-fallback) ALLOW_FALLBACK=1; shift 1;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1"; usage; exit 1;;
   esac
@@ -109,6 +112,7 @@ LOG_FILE="$RUN_LOG/lineD_full_run.log"
   echo "OUTDIR=$RUN_OUT"
   echo "LOGDIR=$RUN_LOG"
   echo "CUDA=$CUDA"
+  echo "ALLOW_FALLBACK=$ALLOW_FALLBACK"
 } | tee -a "$LOG_FILE"
 
 PYTHON_CMD="python"
@@ -123,16 +127,118 @@ if [[ ! -f "$VCF" ]]; then
   exit 1
 fi
 
+expected_ref="$DEFAULT_ASSETS/ref/hg19.fa"
+expected_bg="$DEFAULT_ASSETS/bg_full"
+expected_weights="$DEFAULT_ASSETS/weights"
+expected_vocab="$DEFAULT_ASSETS/vocab/vocab.txt"
+expected_config="$DEFAULT_ASSETS/config/bert_config.json"
+
+missing=()
+add_missing() { missing+=("$1"); }
+
+WEIGHT_FILE=""
+BG_JSON=""
+
 if [[ ! -f "$REF" ]]; then
-  echo "ERROR: Reference FASTA not found: $REF" | tee -a "$LOG_FILE"
-  echo "Run: bash docs/lineD_fetch_assets.sh" | tee -a "$LOG_FILE"
-  exit 1
+  add_missing "ref: $REF (expected $expected_ref)"
 fi
 
-if [[ ! -d "$BG" ]]; then
-  echo "ERROR: Background directory not found: $BG" | tee -a "$LOG_FILE"
-  echo "Provide full background (JSON + PKL) or run: bash docs/lineD_fetch_assets.sh" | tee -a "$LOG_FILE"
-  exit 1
+if [[ -d "$BG" ]]; then
+  if ls "$BG"/*.json >/dev/null 2>&1; then
+    BG_JSON="$(ls "$BG"/*.json | head -n 1)"
+  else
+    add_missing "bg_full JSON: $BG/*.json (expected $expected_bg)"
+  fi
+else
+  add_missing "bg_full: $BG (expected $expected_bg)"
+fi
+
+if [[ -d "$WEIGHTS" ]]; then
+  wfiles=($(find "$WEIGHTS" -maxdepth 1 -type f -name "*.h5" -print 2>/dev/null; find "$WEIGHTS" -maxdepth 1 -type f -name "*.hdf5" -print 2>/dev/null))
+  if [[ ${#wfiles[@]} -eq 1 ]]; then
+    WEIGHT_FILE="${wfiles[0]}"
+  elif [[ ${#wfiles[@]} -eq 0 ]]; then
+    add_missing "weights: $WEIGHTS/*.h5 (expected $expected_weights)"
+  else
+    echo "ERROR: Multiple weights found in $WEIGHTS; please pass --weights <file>" | tee -a "$LOG_FILE"
+    printf '%s\n' "${wfiles[@]}" | tee -a "$LOG_FILE"
+    exit 1
+  fi
+elif [[ -f "$WEIGHTS" ]]; then
+  WEIGHT_FILE="$WEIGHTS"
+else
+  add_missing "weights: $WEIGHTS (expected $expected_weights)"
+fi
+
+if [[ ! -f "$VOCAB" ]]; then
+  add_missing "vocab: $VOCAB (expected $expected_vocab)"
+fi
+
+if [[ ! -f "$CONFIG" ]]; then
+  add_missing "config: $CONFIG (expected $expected_config)"
+fi
+
+if [[ ${#missing[@]} -gt 0 ]]; then
+  if [[ "$ALLOW_FALLBACK" -eq 0 ]]; then
+    echo "ERROR: Missing required full-run assets:" | tee -a "$LOG_FILE"
+    for m in "${missing[@]}"; do
+      echo "  - $m" | tee -a "$LOG_FILE"
+    done
+    echo "Expected asset roots:" | tee -a "$LOG_FILE"
+    echo "  ref:     $expected_ref" | tee -a "$LOG_FILE"
+    echo "  bg_full: $expected_bg" | tee -a "$LOG_FILE"
+    echo "  weights: $expected_weights" | tee -a "$LOG_FILE"
+    echo "  vocab:   $expected_vocab" | tee -a "$LOG_FILE"
+    echo "  config:  $expected_config" | tee -a "$LOG_FILE"
+    echo "Run: bash docs/lineD_fetch_assets.sh" | tee -a "$LOG_FILE"
+    exit 1
+  else
+    echo "WARN: Missing full-run assets (allow-fallback enabled):" | tee -a "$LOG_FILE"
+    for m in "${missing[@]}"; do
+      echo "  - $m" | tee -a "$LOG_FILE"
+    done
+    echo "Attempting fallback to repo/smoke assets..." | tee -a "$LOG_FILE"
+
+    if [[ ! -f "$REF" ]]; then
+      if [[ -f "$ROOT_DIR/docs/lineD_ref/lineD_min.fa" ]]; then
+        REF="$ROOT_DIR/docs/lineD_ref/lineD_min.fa"
+      elif [[ -f "$ROOT_DIR/docs/lineD_ref/male.hg19.fasta" ]]; then
+        REF="$ROOT_DIR/docs/lineD_ref/male.hg19.fasta"
+      else
+        echo "ERROR: fallback reference not found in docs/lineD_ref/" | tee -a "$LOG_FILE"
+        exit 1
+      fi
+      echo "WARN: Using fallback reference: $REF" | tee -a "$LOG_FILE"
+    fi
+
+    if [[ ! -d "$BG" ]] || ! ls "$BG"/*.json >/dev/null 2>&1; then
+      if [[ -d "$ROOT_DIR/docs/lineD_background" ]] && ls "$ROOT_DIR/docs/lineD_background"/*.json >/dev/null 2>&1; then
+        BG="$ROOT_DIR/docs/lineD_background"
+      else
+        echo "ERROR: fallback background not found in docs/lineD_background" | tee -a "$LOG_FILE"
+        exit 1
+      fi
+      echo "WARN: Using fallback background: $BG" | tee -a "$LOG_FILE"
+    fi
+
+    if [[ -z "$WEIGHT_FILE" ]]; then
+      if [[ -f "$ROOT_DIR/99_PreTrain_Model_Weight/LOGO_5_gram_2_layer_8_heads_256_dim_weights_32-0.885107.hdf5" ]]; then
+        WEIGHT_FILE="$ROOT_DIR/99_PreTrain_Model_Weight/LOGO_5_gram_2_layer_8_heads_256_dim_weights_32-0.885107.hdf5"
+      else
+        echo "ERROR: fallback weight not found in 99_PreTrain_Model_Weight" | tee -a "$LOG_FILE"
+        exit 1
+      fi
+      echo "WARN: Using fallback weight: $WEIGHT_FILE" | tee -a "$LOG_FILE"
+    fi
+  fi
+fi
+
+if [[ ! -f "$VOCAB" ]]; then
+  echo "WARN: Vocab file not found at $VOCAB (proceeding with --vocab-size 15638)" | tee -a "$LOG_FILE"
+fi
+
+if [[ ! -f "$CONFIG" ]]; then
+  echo "WARN: Config file not found at $CONFIG" | tee -a "$LOG_FILE"
 fi
 
 BG_JSON=""
@@ -165,6 +271,12 @@ if missing_files:
 print("Background JSON OK:", os.path.basename(json_path))
 PY
 
+{
+  echo "FINAL_REF=$REF"
+  echo "FINAL_BG=$BG"
+  echo "FINAL_WEIGHT=$WEIGHT_FILE"
+} | tee -a "$LOG_FILE"
+
 ref_header=$(head -n 1 "$REF" || true)
 if [[ "$ref_header" != ">chr"* ]]; then
   echo "WARN: Reference FASTA headers do not start with 'chr'." | tee -a "$LOG_FILE"
@@ -181,40 +293,12 @@ if [[ -n "$vcf_chrom" ]]; then
   fi
 fi
 
-WEIGHT_FILE=""
-if [[ -d "$WEIGHTS" ]]; then
-  wfiles=($(find "$WEIGHTS" -maxdepth 1 -type f -name "*.h5" -print 2>/dev/null; find "$WEIGHTS" -maxdepth 1 -type f -name "*.hdf5" -print 2>/dev/null))
-  if [[ ${#wfiles[@]} -eq 1 ]]; then
-    WEIGHT_FILE="${wfiles[0]}"
-  elif [[ ${#wfiles[@]} -eq 0 ]]; then
-    if [[ -f "$ROOT_DIR/99_PreTrain_Model_Weight/LOGO_5_gram_2_layer_8_heads_256_dim_weights_32-0.885107.hdf5" ]]; then
-      WEIGHT_FILE="$ROOT_DIR/99_PreTrain_Model_Weight/LOGO_5_gram_2_layer_8_heads_256_dim_weights_32-0.885107.hdf5"
-      echo "WARN: Using repo pretrain weight for sanity run: $WEIGHT_FILE" | tee -a "$LOG_FILE"
-    else
-      echo "ERROR: No weights found in $WEIGHTS" | tee -a "$LOG_FILE"
-      echo "Place a .h5/.hdf5 weight file in docs/lineD_assets/weights or pass --weights <file>" | tee -a "$LOG_FILE"
-      exit 1
-    fi
-  else
-    echo "ERROR: Multiple weights found in $WEIGHTS; please pass --weights <file>" | tee -a "$LOG_FILE"
-    printf '%s\n' "${wfiles[@]}" | tee -a "$LOG_FILE"
-    exit 1
-  fi
-elif [[ -f "$WEIGHTS" ]]; then
-  WEIGHT_FILE="$WEIGHTS"
-else
-  echo "ERROR: Weights path not found: $WEIGHTS" | tee -a "$LOG_FILE"
-  exit 1
-fi
-
 VOCAB_SIZE=15638
 if [[ -f "$VOCAB" ]]; then
   count=$(grep -cve '^\s*$' "$VOCAB" || true)
   if [[ "$count" -gt 0 ]]; then
     VOCAB_SIZE="$count"
   fi
-else
-  echo "WARN: Vocab file not found at $VOCAB (proceeding with --vocab-size $VOCAB_SIZE)" | tee -a "$LOG_FILE"
 fi
 
 if [[ -f "$CONFIG" ]]; then
@@ -227,8 +311,6 @@ for k in keys:
     if k in cfg:
         print(f"  {k}: {cfg[k]}")
 PY
-else
-  echo "WARN: Config file not found at $CONFIG" | tee -a "$LOG_FILE"
 fi
 
 INPUT_LINK="$RUN_OUT/$(basename "$VCF")"

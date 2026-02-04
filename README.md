@@ -177,3 +177,14 @@ bash docs/lineD_run.sh
 ```
 
 Details and notes: `docs/README_smoketest.md`
+
+## Full Run (Line D)
+
+Full inference wrapper for real VCF + full hg19/GRCh37 + official weights/vocab:
+
+```shell
+bash docs/lineD_fetch_assets.sh
+bash docs/lineD_full_run.sh --vcf /path/to/your.vcf
+```
+
+Details and notes: `docs/README_fullrun.md`

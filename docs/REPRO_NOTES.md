@@ -34,7 +34,7 @@ python extract_sigvar_demo.py demo_output.csv demo_sig.csv 3357 > extract_sigvar
 ## Chromatin Feature demo (Line C: GeneBert_predict_vcf_slice_e8)
 
 ### Command
-PYTHONPATH="/Users/jason/Desktop/LOGO" conda run -n logo-lite --no-capture-output python "04_LOGO_Chromatin_Feature/1. script/04_LOGO_Chrom_predict/GeneBert_predict_vcf_slice_e8.py" -h | head -n 80 | tee docs/lineC_genebert_run.log
+PYTHONPATH="$PWD" conda run -n logo-lite --no-capture-output python "04_LOGO_Chromatin_Feature/1. script/04_LOGO_Chrom_predict/GeneBert_predict_vcf_slice_e8.py" -h | head -n 80 | tee docs/lineC_genebert_run.log
 
 ### Inputs
 - 04_LOGO_Chromatin_Feature/1. script/04_LOGO_Chrom_predict/demo.vcf
@@ -49,3 +49,24 @@ PYTHONPATH="/Users/jason/Desktop/LOGO" conda run -n logo-lite --no-capture-outpu
 
 ### Notes
 - Set PYTHONPATH to repo root so the `bgi` package is importable.
+
+## Chromatin/Variant smoke test (Line D)
+
+### Command
+bash docs/lineD_run.sh
+
+### Inputs
+- 05_LOGO_Variant_Prioritization/1. script/05_LOGO-C2P/GWAS_C2P/1000G_GWAS_1408.vcf
+- docs/lineD_background/all_bdg_51_pkl.json
+- docs/lineD_background/ecdf.pkl
+- docs/lineD_ref/male.hg19.fasta
+- 99_PreTrain_Model_Weight/LOGO_5_gram_2_layer_8_heads_256_dim_weights_32-0.885107.hdf5
+
+### Outputs
+- 05_LOGO_Variant_Prioritization/1. script/05_LOGO-C2P/GWAS_C2P/1000G_GWAS_1408.vcf_2bs_5gram_51feature.out.*.csv
+- docs/lineD_logs/lineD_run.log
+- docs/lineD_logs/session.log
+
+### Notes
+- `scripts/patch_pyfasta.py` is called in `docs/lineD_run.sh` to fix Python3 compatibility.
+- `num_classes` is fixed to 51 and `max_position_embeddings` to 512.

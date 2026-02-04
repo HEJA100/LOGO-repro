@@ -396,7 +396,7 @@ def process_raw_text(records: list,
     slice_alt_seq_data = np.array(slice_alt_seq_data)
     slice_label_data = np.array(slice_label_data)
 
-    alt_type = np.array(slice_seq_data == slice_alt_seq_data, dtype=np.int)
+    alt_type = np.array(slice_seq_data == slice_alt_seq_data, dtype=int)
     alt_type = (1 - alt_type)
     slice_alt_seq_data = slice_alt_seq_data * alt_type
 
@@ -427,7 +427,7 @@ def process_raw_text(records: list,
     if len(slice_seq_data) > 0:
         slice_seq_data = np.array(slice_seq_data)
         slice_alt_seq_data = np.array(slice_alt_seq_data)
-        alt_type = np.array(slice_seq_data == slice_alt_seq_data, dtype=np.int)
+        alt_type = np.array(slice_seq_data == slice_alt_seq_data, dtype=int)
         alt_type = (1 - alt_type)
         slice_alt_seq_data = slice_alt_seq_data * alt_type
 
@@ -612,5 +612,4 @@ if __name__ == '__main__':
 
     pool.close()
     pool.join()
-
 

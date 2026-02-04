@@ -422,7 +422,6 @@ if __name__ == '__main__':
                        metrics=['accuracy', tf.keras.metrics.AUC(name="auc")])
 
 
-    x = np.ones((1000, 100), dtype=np.int)
-    y = np.ones((1000, 1), dtype=np.int)
+    x = np.ones((1000, 100), dtype=int)
+    y = np.ones((1000, 1), dtype=int)
     albert.fit([x,x], y, batch_size=32, epochs=1, steps_per_epoch=10)
-

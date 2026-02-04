@@ -2,12 +2,14 @@
 import argparse
 import csv
 import gzip
+import io
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tarfile
 from collections import defaultdict
 
 
@@ -118,6 +120,31 @@ def select_files(figshare_dir):
     return files
 
 
+def select_tar_archives(figshare_dir):
+    tars = []
+    for root, _, fnames in os.walk(figshare_dir):
+        for fn in fnames:
+            if fn.endswith(".vcf.tar.gz") and "FSResult" in fn:
+                tars.append(os.path.join(root, fn))
+    return tars
+
+
+def iter_vcf_lines_from_tar(tar_path):
+    with tarfile.open(tar_path, "r:gz") as tf:
+        members = [m for m in tf.getmembers() if m.isfile() and (m.name.endswith(".vcf") or m.name.endswith(".vcf.gz"))]
+        for m in members:
+            f = tf.extractfile(m)
+            if f is None:
+                continue
+            if m.name.endswith(".vcf.gz"):
+                fh = gzip.open(f, "rt", errors="ignore")
+            else:
+                fh = io.TextIOWrapper(f, encoding="utf-8", errors="ignore")
+            with fh:
+                for line in fh:
+                    yield line.rstrip("\n"), os.path.basename(m.name)
+
+
 def chrom_from_filename(name):
     m = re.search(r"(?i)(?:^|[^a-z0-9])(chr)?(1[0-9]|2[0-2]|[1-9]|x|y|m|mt)(?:[^a-z0-9]|$)", name)
     if not m:
@@ -226,15 +253,96 @@ def main():
         by_chrom[v["chrom_norm"]].append(v)
         positions[v["chrom_norm"]].add(v["pos"])
 
+    tar_archives = select_tar_archives(args.figshare_dir)
     files = select_files(args.figshare_dir)
-    if not files and not args.allow_empty:
+    if not tar_archives and not files and not args.allow_empty:
         print(f"ERROR: No data files found under {args.figshare_dir}.")
         print("Hint: fetch and unzip the Figshare ZIP first:")
         print("  python scripts/figshare_zip_fetch.py --out /tmp/logo_figshare_19149827_v2.zip")
         print("  bash scripts/figshare_unzip_into.sh /tmp/logo_figshare_19149827_v2.zip docs/lineD_figshare")
         return 2
-    if not files and args.allow_empty:
+    if not tar_archives and not files and args.allow_empty:
         print(f"No data files found under {args.figshare_dir}. Proceeding with empty lookups (--allow-empty).")
+
+    if tar_archives:
+        tar_by_chrom = defaultdict(list)
+        global_tar = []
+        for t in tar_archives:
+            c = chrom_from_filename(os.path.basename(t))
+            if c:
+                tar_by_chrom[c].append(t)
+            else:
+                global_tar.append(t)
+
+        hits_by_index = defaultdict(list)
+
+        for chrom, pos_map in by_chrom.items():
+            pos_dict = defaultdict(list)
+            for v in pos_map:
+                pos_dict[v["pos"]].append(v)
+            tar_list = tar_by_chrom.get(chrom, []) + global_tar
+            if not tar_list:
+                continue
+            pos_set = set(pos_dict.keys())
+            for tar_path in tar_list:
+                for line, member_name in iter_vcf_lines_from_tar(tar_path):
+                    if not line or line.startswith("#"):
+                        continue
+                    fields = line.split("\t")
+                    if len(fields) < 5:
+                        continue
+                    try:
+                        pos_val = int(fields[1])
+                    except Exception:
+                        continue
+                    if pos_val not in pos_set:
+                        continue
+                    chrom_val = normalize_chrom(fields[0])
+                    if chrom_val != chrom:
+                        continue
+                    ref_val = fields[3]
+                    alt_vals = fields[4].split(",")
+                    for v in pos_dict[pos_val]:
+                        if ref_val == v["ref"] and v["alt"] in alt_vals:
+                            hits_by_index[id(v)].append((line, os.path.basename(tar_path), member_name))
+
+        out_rows = []
+        for v in variants:
+            chrom_has_tar = bool(tar_by_chrom.get(v["chrom_norm"])) or bool(global_tar)
+            hits = hits_by_index.get(id(v), [])
+            matched_rows = len(hits)
+            if not chrom_has_tar:
+                match_note = "not_available_in_zip"
+            elif matched_rows == 0:
+                match_note = "no_match"
+            else:
+                match_note = "hit:multi" if matched_rows > 1 else "hit"
+
+            if matched_rows == 0:
+                out_rows.append({
+                    "CHROM": v["chrom"], "POS": v["pos"], "ID": v["id"], "REF": v["ref"], "ALT": v["alt"],
+                    "matched_rows": matched_rows, "match_note": match_note, "hit_file": "", "raw_hit": "",
+                })
+            else:
+                if args.keep_multi:
+                    raw_hit = "; ".join([h[0] for h in hits])
+                    hit_file = "; ".join([f"{h[1]}:{h[2]}" for h in hits])
+                else:
+                    raw_hit = hits[0][0]
+                    hit_file = f"{hits[0][1]}:{hits[0][2]}"
+                out_rows.append({
+                    "CHROM": v["chrom"], "POS": v["pos"], "ID": v["id"], "REF": v["ref"], "ALT": v["alt"],
+                    "matched_rows": matched_rows, "match_note": match_note, "hit_file": hit_file, "raw_hit": raw_hit,
+                })
+
+        with open(out_path, "w", newline="") as out_f:
+            writer = csv.writer(out_f, delimiter=delim_out)
+            writer.writerow(["CHROM", "POS", "ID", "REF", "ALT", "matched_rows", "match_note", "hit_file", "raw_hit"])
+            for row in out_rows:
+                writer.writerow([row["CHROM"], row["POS"], row["ID"], row["REF"], row["ALT"], row["matched_rows"], row["match_note"], row["hit_file"], row["raw_hit"]])
+
+        print(out_path)
+        return 0
 
     chrom_files = defaultdict(list)
     global_files = []

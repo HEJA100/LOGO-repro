@@ -83,10 +83,22 @@ If you are blocked by Cloudflare/403, use the **Copy as cURL** flow above.
 
 ## Notes
 - The script auto-detects per-chromosome files by name (`chr1`, `chr2`, `chrX`, etc.).
+- The **full Figshare ZIP** contains `*_FSResult.vcf.tar.gz` (one per chromosome). The lookup script automatically switches to **VCF-TAR mode** when it detects these files and will match by `CHROM/POS/REF/ALT`.
 - It attempts to infer column mapping; if inference fails, pass `--cols`, e.g.
   - `--cols chrom=1,pos=2,ref=4,alt=5,id=3,score=6-56`
 - If indexed (`.tbi`) files are available, the script uses tabix for fast region queries. Otherwise it streams through the file for the requested positions.
 - Use `--make-index` to create bgzip+tabix indexes in `docs/lineD_figshare/indexed/` (original files remain unchanged).
+
+## Full ZIP (VCF-TAR mode) quick chain
+```
+mkdir -p docs/lineD_figshare/extracted_full
+bash scripts/figshare_unzip_into.sh docs/lineD_figshare/LOGO_dbSNP_score_chr_full.zip docs/lineD_figshare/extracted_full
+python scripts/logo_lookup_figshare.py \
+  --vcf docs/lineD_out/lineD_input.vcf \
+  --figshare-dir docs/lineD_figshare/extracted_full \
+  --out docs/lineD_out/lineD_input.vcf.logo_figshare.tsv
+awk -F'\t' 'NR>1 && $6>0 {c++} END{print "matched_variants:", c+0}' docs/lineD_out/lineD_input.vcf.logo_figshare.tsv
+```
 
 ## Strict/full-run remains recommended
 For arbitrary or novel variants (non-dbSNP), use the strict/full-run pipeline.
